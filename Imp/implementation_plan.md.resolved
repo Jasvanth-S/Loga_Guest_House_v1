@@ -1,0 +1,385 @@
+# Loga Guest House — Production Implementation Plan
+
+A luxury boutique guesthouse website for **Loga**, Sri Lanka. Built with Next.js 14 App Router, TailwindCSS, and Supabase. The aesthetic direction is **"Tropical Luxury Editorial"** — inspired by Cinnamon Hotels & Resorts, with a rich warm palette, Cormorant Garamond serif headings paired with DM Sans body text, immersive full-bleed photography, and breathing negative space.
+
+---
+
+## Proposed Changes
+
+### Project Initialization
+
+#### [NEW] Project root (`c:/Users/jasva/Desktop/project/LogaGuestHouse/`)
+Bootstrap with `create-next-app` using the App Router, TypeScript, and TailwindCSS. Install all dependencies.
+
+**Key dependencies:**
+- `@supabase/supabase-js` + `@supabase/ssr` — Supabase client/server
+- `@tanstack/react-query` — data fetching & caching
+- `react-hook-form` + `zod` — forms & validation
+- `framer-motion` — animations & transitions
+- `react-day-picker` — availability calendar
+- `swiper` — image gallery
+- `lucide-react` — icon set
+- `date-fns` — date utilities
+- `react-hot-toast` — notifications
+- `@stripe/stripe-js` + `stripe` — payment processing stubs
+- `nodemailer` — email confirmations
+- `next-sitemap` — sitemap generation
+
+---
+
+### 1. Configuration & Design System
+
+#### [NEW] `tailwind.config.ts`
+Custom design tokens:
+```ts
+colors: {
+  ocean:   { DEFAULT: '#0B3D6B', light: '#1A5996', dark: '#07294A' },
+  sand:    { DEFAULT: '#C9A96E', light: '#E2C99A', dark: '#A07840' },
+  coconut: { DEFAULT: '#FAF7F2', dark: '#F0EBE0' },
+  palm:    { DEFAULT: '#2D6A4F', light: '#40916C', dark: '#1B4332' },
+  charcoal:'#1C1C1E',
+}
+fontFamily: { serif: ['Cormorant Garamond', 'Georgia', 'serif'], sans: ['DM Sans', 'sans-serif'] }
+borderRadius: { xl: '12px', '2xl': '20px', '3xl': '32px' }
+```
+
+#### [NEW] `src/app/globals.css`
+CSS custom properties, base styles, Swiper overrides, custom scrollbar, animation classes.
+
+#### [NEW] `src/lib/supabase/client.ts` + `server.ts` + `middleware.ts`
+Browser and server Supabase clients using `@supabase/ssr`.
+
+#### [NEW] `.env.local` (template)
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
+RESEND_API_KEY=
+NEXT_PUBLIC_SITE_URL=
+NEXT_PUBLIC_WHATSAPP_NUMBER=
+```
+
+---
+
+### 2. Database Schema
+
+#### [NEW] `supabase/schema.sql`
+Complete SQL with all tables, indexes, RLS policies, triggers, and seed data:
+- `users` (extends `auth.users`)
+- `rooms` (with `amenities jsonb`, `gallery jsonb`)
+- `bookings` (with status enums)
+- `seasonal_pricing`
+- `reviews`
+- `blog_posts`
+- `add_on_services`
+- `booking_addons` (junction)
+- `coupons`
+
+RLS: Guests can read rooms/availability, create/view own bookings. Admins can read/write all.
+
+---
+
+### 3. Middleware & Auth
+
+#### [NEW] `middleware.ts`
+- Protect `/dashboard`, `/admin` routes
+- Redirect unauthenticated users to `/auth/login`
+- Inject Supabase session into server context
+
+#### [NEW] `src/app/auth/login/page.tsx` + `register/page.tsx`
+- Email/password auth via Supabase
+- Google OAuth option
+- Elegant full-screen forms with tropical imagery
+
+#### [NEW] `src/app/auth/callback/route.ts`
+OAuth callback handler.
+
+---
+
+### 4. API Routes
+
+#### [NEW] `src/app/api/rooms/route.ts`
+GET: List active rooms with optional filters (category, guests, price).
+
+#### [NEW] `src/app/api/rooms/[slug]/route.ts`
+GET: Single room detail with pricing.
+
+#### [NEW] `src/app/api/availability/route.ts`
+GET: Blocked dates for a room (booked + seasonal closures).
+POST: Validate date range availability before booking.
+
+#### [NEW] `src/app/api/bookings/route.ts`
+POST: Create booking — validates availability, calculates seasonal price, creates pending booking.
+
+#### [NEW] `src/app/api/bookings/[id]/route.ts`
+GET: Booking detail (auth-required, own booking or admin).
+PATCH: Update booking status (admin only).
+DELETE: Cancel booking (guest — within policy window).
+
+#### [NEW] `src/app/api/pricing/route.ts`
+GET: Calculate price for date range (seasonal multiplier applied).
+
+#### [NEW] `src/app/api/reviews/route.ts`
+GET: Reviews for a room. POST: Submit review (auth required, must have completed booking).
+
+#### [NEW] `src/app/api/blog/route.ts` + `[slug]/route.ts`
+Blog CRUD.
+
+#### [NEW] `src/app/api/payments/stripe/route.ts`
+Create Stripe PaymentIntent (partial 30% or full).
+
+#### [NEW] `src/app/api/payments/webhook/route.ts`
+Stripe webhook — confirm payment, update booking status, trigger email.
+
+#### [NEW] `src/app/api/email/route.ts`
+Send confirmation email via Resend.
+
+#### [NEW] `src/app/api/og/route.tsx`
+Dynamic OG image generation with `@vercel/og`.
+
+---
+
+### 5. Shared Components (Atomic Design)
+
+#### Atoms
+- `Button` — variants: primary/secondary/ghost, sizes, loading state
+- `Badge` — category, status, price
+- `Input`, `Textarea`, `Select` — form primitives
+- `StarRating` — display-only and interactive
+- `CurrencyDisplay` — LKR/USD/EUR switcher
+- `Spinner`, `Skeleton` — loading states
+
+#### Molecules
+- `RoomCard` — image, title, price, rating, max guests, hover elevation
+- `ReviewCard` — avatar, rating, comment, date
+- `BlogCard` — cover, title, excerpt, category
+- `BookingWidget` — check-in/out date pickers + guests + Book Now CTA
+- `PriceCalculator` — shows base + seasonal + taxes
+- `AddOnCard` — service name, price, toggle
+- `GalleryThumb` — thumbnail with lightbox trigger
+
+#### Organisms
+- `Navbar` — transparent → sticky with blur on scroll, mobile drawer
+- `HeroSection` — full-screen, video/image, gradient overlay, booking widget
+- `AmenitiesGrid` — icon + label grid (WiFi, AC, pool, pickup etc.)
+- `RoomGrid` — filterable grid
+- `AvailabilityCalendar` — react-day-picker, blocked dates highlighted
+- `ImageGallery` — Swiper slider + lightbox
+- `ReviewsSection` — rating summary + card list
+- `AddOnSelector` — multi-select with price summary
+- `CheckoutForm` — guest details + payment selector
+- `AdminSidebar` + `AdminStats` cards
+- `Footer` — links, trust badges, social, WhatsApp CTA
+- `ChatbotWidget` — floating AI chat bubble
+- `WhatsAppButton` — fixed bottom-right float
+
+---
+
+### 6. Pages
+
+#### [NEW] `src/app/page.tsx` — Home `/`
+- `HeroSection` with full-bleed tropical image + `BookingWidget`
+- Amenities highlight strip
+- Featured rooms section (3 cards)
+- Google reviews preview
+- "Why Loga" trust section (WiFi, safety, eco badges)
+- Blog teaser
+- CTA banner
+
+#### [NEW] `src/app/rooms/page.tsx` — `/rooms`
+- Rooms grid with category/guest/price filters
+- URL-based filter state
+- Skeleton loading
+
+#### [NEW] `src/app/rooms/[slug]/page.tsx` — `/rooms/[slug]`
+- `ImageGallery` full-width slider
+- Room details: description, amenities, max guests, pricing
+- `AvailabilityCalendar`
+- `AddOnSelector`
+- `PriceCalculator` with seasonal pricing
+- "Book This Room" sticky CTA bar (mobile)
+- Reviews section
+- Similar rooms
+
+#### [NEW] `src/app/booking/page.tsx` — `/booking`
+- Step 1: Review summary (room, dates, guests, price)
+- Step 2: Guest details form (react-hook-form + zod)
+- Step 3: Payment — partial (30%) or full, Stripe card input
+- Coupon code field
+- WhatsApp summary toggle
+- Tax display (15% VAT)
+
+#### [NEW] `src/app/blog/page.tsx` — `/blog`
+- SEO metadata
+- Blog card grid with category filter
+- Search input
+
+#### [NEW] `src/app/blog/[slug]/page.tsx` — `/blog/[slug]`
+- Full article with structured content
+- Internal links to rooms
+- JSON-LD BlogPosting schema
+- OG metadata
+
+#### [NEW] `src/app/experiences/page.tsx` — `/experiences`
+- Attractions: Sigiriya, Ella, Galle Fort, Bentota Beach
+- Google Maps embeds
+- Distance from Loga + travel tips
+
+#### [NEW] `src/app/gallery/page.tsx` — `/gallery`
+- Masonry photo grid
+- Lightbox viewer
+- Category tabs (Rooms, Pool, Dining, Nature)
+
+#### [NEW] `src/app/contact/page.tsx` — `/contact`
+- Contact form (react-hook-form)
+- WhatsApp direct link (wa.me)
+- Google Maps embed
+- Direct call button
+- Social links
+
+#### [NEW] `src/app/dashboard/page.tsx` — `/dashboard` (auth required)
+- Upcoming + past bookings table
+- Cancel booking (within 48h)
+- Download invoice (PDF-like print page)
+- Edit profile
+
+#### [NEW] `src/app/admin/page.tsx` — `/admin` (admin role required)
+- Overview stats: revenue, bookings, occupancy %
+- Line chart: bookings over time (recharts)
+- Room management: add/edit/deactivate rooms
+- Seasonal pricing management calendar
+- Recent bookings table with status updates
+- Reviews moderation
+
+---
+
+### 7. Booking Logic
+
+#### [NEW] `src/lib/booking.ts`
+```ts
+// Check availability (no double booking via DB unique constraint)
+checkAvailability(roomId, checkIn, checkOut): Promise<boolean>
+
+// Calculate price with seasonal multipliers
+calculatePrice(roomId, checkIn, checkOut, currency): Promise<PriceBreakdown>
+
+// Apply coupon
+applyCoupon(code, subtotal): Promise<DiscountResult>
+
+// Create booking (atomic transaction)
+createBooking(payload: BookingPayload): Promise<Booking>
+
+// Minimum stay enforcement
+validateMinimumStay(checkIn, checkOut, minNights): boolean
+```
+
+---
+
+### 8. SEO & Metadata
+
+#### [NEW] `src/app/layout.tsx`
+Root metadata with Hotel schema, viewport, theme-color.
+
+Each page exports `generateMetadata()` using Next.js Metadata API with:
+- `title`, `description`, `openGraph`, `twitter`
+- `alternates.canonical`
+- JSON-LD `Hotel` / `BlogPosting` schemas via `<script>` tag
+
+---
+
+### 9. Folder Structure
+
+```
+LogaGuestHouse/
+├── supabase/
+│   └── schema.sql
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── globals.css
+│   │   ├── auth/
+│   │   │   ├── login/page.tsx
+│   │   │   ├── register/page.tsx
+│   │   │   └── callback/route.ts
+│   │   ├── rooms/
+│   │   │   ├── page.tsx
+│   │   │   └── [slug]/page.tsx
+│   │   ├── booking/page.tsx
+│   │   ├── blog/
+│   │   │   ├── page.tsx
+│   │   │   └── [slug]/page.tsx
+│   │   ├── experiences/page.tsx
+│   │   ├── gallery/page.tsx
+│   │   ├── contact/page.tsx
+│   │   ├── dashboard/page.tsx
+│   │   ├── admin/
+│   │   │   └── page.tsx
+│   │   └── api/
+│   │       ├── rooms/route.ts + [slug]/route.ts
+│   │       ├── availability/route.ts
+│   │       ├── bookings/route.ts + [id]/route.ts
+│   │       ├── pricing/route.ts
+│   │       ├── reviews/route.ts
+│   │       ├── blog/route.ts + [slug]/route.ts
+│   │       ├── payments/stripe/route.ts + webhook/route.ts
+│   │       ├── email/route.ts
+│   │       └── og/route.tsx
+│   ├── components/
+│   │   ├── atoms/ (Button, Badge, Input, StarRating, CurrencyDisplay, Spinner)
+│   │   ├── molecules/ (RoomCard, ReviewCard, BlogCard, BookingWidget, PriceCalculator, AddOnCard)
+│   │   └── organisms/ (Navbar, HeroSection, AmenitiesGrid, RoomGrid, AvailabilityCalendar,
+│   │                    ImageGallery, ReviewsSection, CheckoutForm, AdminSidebar, Footer,
+│   │                    ChatbotWidget, WhatsAppButton)
+│   ├── lib/
+│   │   ├── supabase/ (client.ts, server.ts, middleware.ts)
+│   │   ├── booking.ts
+│   │   ├── pricing.ts
+│   │   ├── email.ts
+│   │   └── utils.ts
+│   ├── hooks/
+│   │   ├── useAvailability.ts
+│   │   ├── useCurrency.ts
+│   │   ├── useBooking.ts
+│   │   └── useAuth.ts
+│   ├── types/
+│   │   └── index.ts (Room, Booking, Review, BlogPost, User, AddOn, Coupon)
+│   └── middleware.ts
+├── public/
+│   └── images/ (placeholder/hero)
+├── tailwind.config.ts
+├── next.config.ts
+├── next-sitemap.config.js
+├── vercel.json
+└── .env.local
+```
+
+---
+
+## Verification Plan
+
+### Automated Tests
+No existing test suite. I will verify at the file level:
+```bash
+# TypeScript compilation check
+npx tsc --noEmit
+
+# Dev server starts without errors
+npm run dev
+```
+
+### Browser Verification (via browser subagent)
+1. Navigate to `http://localhost:3000` — verify hero renders, booking widget visible
+2. Navigate to `/rooms` — verify room cards load
+3. Navigate to `/blog` — verify blog posts render
+4. Navigate to `/contact` — verify form and WhatsApp button
+5. Navigate to `/admin` — verify redirect to login (auth guard)
+6. Navigate to `/auth/login` — verify login form renders
+
+### Manual Verification Points
+- Tailwind styles applied correctly (tropical palette)
+- Navbar becomes sticky + opaque on scroll
+- Mobile responsive at 375px viewport
+- Room card hover animation works
