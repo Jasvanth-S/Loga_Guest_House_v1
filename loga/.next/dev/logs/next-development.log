@@ -1,0 +1,32 @@
+[00:10:32.169] Server  ERROR   Error: Cannot find module 'C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\.next\dev\server\middleware-manifest.json'
+Require stack:
+- C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\node_modules\next\dist\server\next-server.js
+- C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\node_modules\next\dist\server\dev\next-dev-server.js
+- C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\node_modules\next\dist\server\next.js
+- C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\node_modules\next\dist\server\lib\start-server.js
+[00:10:32.196] Server  ERROR   TurbopackInternalError: Failed to restore task data (corrupted database or bug): Meta for get_written_endpoint_with_issues_operation (TaskId 19369))
+
+Debug info:
+- Failed to restore task data (corrupted database or bug): Meta for get_written_endpoint_with_issues_operation (TaskId 19369))
+  
+  Caused by:
+      0: Looking up data for TaskId 19369 from database failed
+      1: Unable to open static sorted file referenced from 00000102.meta
+      2: Unable to open static sorted file 00000095.sst
+      3: The system cannot find the path specified. (os error 3)
+[00:10:47.306] Server  ERROR   Error: Cannot find module 'C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\.next\dev\server\middleware-manifest.json'
+Require stack:
+- C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\node_modules\next\dist\server\next-server.js
+- C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\node_modules\next\dist\server\dev\next-dev-server.js
+- C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\node_modules\next\dist\server\next.js
+- C:\Users\jasva\Desktop\project\LogaGuestHouse\loga\node_modules\next\dist\server\lib\start-server.js
+[00:10:47.322] Server  ERROR   TurbopackInternalError: Failed to restore task data (corrupted database or bug): Meta for get_written_endpoint_with_issues_operation (TaskId 19369))
+
+Debug info:
+- Failed to restore task data (corrupted database or bug): Meta for get_written_endpoint_with_issues_operation (TaskId 19369))
+  
+  Caused by:
+      0: Looking up data for TaskId 19369 from database failed
+      1: Unable to open static sorted file referenced from 00000102.meta
+      2: Unable to open static sorted file 00000095.sst
+      3: The system cannot find the path specified. (os error 3)
